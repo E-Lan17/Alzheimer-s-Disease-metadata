@@ -1,0 +1,116 @@
+
+
+# Importing the libraries
+import warnings
+warnings.filterwarnings('ignore')
+
+
+import pandas as pd
+import tensorflow as tf
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
+
+# Artificial Neural Network
+
+# Importing the dataset : 
+#df = pd.read_csv("XXX.csv")
+X = df.iloc[:,:-1].values
+y = df.iloc[:, -1].values
+
+
+# Splitting the dataset into the Training set and Test set
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2,
+                                                    shuffle=True, random_state = 42)
+
+# Feature Scaling :
+sc = StandardScaler()
+X_train = sc.fit_transform(X_train)
+X_test = sc.transform(X_test)
+
+# Building the ANN
+# Initializing the ANN
+ann = tf.keras.models.Sequential()
+# Adding the input layer and the first hidden layer
+ann.add(tf.keras.layers.Dense(units=10, activation='relu'))
+# Adding the second hidden layer
+ann.add(tf.keras.layers.Dense(units=4, activation='relu'))
+# Adding the output layer
+ann.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
+
+# Training the ANN
+# Compiling the ANN
+ann.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+
+# Training the ANN on the Training set
+history =ann.fit(X_train, y_train, batch_size = 50, epochs = 150)
+
+epochs = range(len(history.history['accuracy']))
+plt.plot(epochs, history.history['accuracy'], 'green', label='Accuracy of Training Data')
+plt.xlabel('Total Epochs')
+plt.ylabel('Accuracy achieved')
+plt.title('Training Accuracy')
+plt.legend(loc=0)
+plt.figure()
+
+plt.plot(history.history['loss'], color='b', label="validation loss")
+plt.title("Test Loss")
+plt.xlabel("Number of Epochs")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
+
+# Predicting the Test set results
+y_pred = ann.predict(X_test)
+y_pred = (y_pred > 0.5)
+#print(np.concatenate((y_pred.reshape(len(y_pred),1), y_test.reshape(len(y_test),1)),1))
+
+# Results :
+print('Confusion matrix :')
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy score :')
+ac=accuracy_score(y_test, y_pred)
+print(ac)
+
+print('Classification Report :')
+target_names = ['AD', 'CTL']
+report = classification_report(y_test, y_pred, target_names=target_names)
+print(report)
+
+f = open("XXX.txt", 'w')
+f.write('Title\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n'.format(report, cm))
+f.close()
+
+
+
+# Principal Component Analysis (PCA)
+
+# Importing the libraries
+import pandas as pd
+from sklearn.decomposition import PCA
+df = pd.DataFrame(df.iloc[:, 1:-1])
+
+from sklearn import preprocessing
+df_scaled = pd.DataFrame(preprocessing.scale(df),columns = df.columns) 
+
+## Analysis with PCA :
+model_pca = PCA(.95)
+out=model_pca.fit(df_scaled)
+components = model_pca.n_components_
+components
+list_components=[]
+for i in range(components) :
+    list_components.append(str(i+1))
+df_features = pd.DataFrame(model_pca.components_,columns=df_scaled.columns,index = [list_components])
+df_features_abs= df_features.abs()
+
+df_Final = pd.DataFrame()
+df_Final["Feature"] = df_features_abs.idxmax(axis=1)
+df_Final["Percentage"] = model_pca.explained_variance_ratio_
+df_Final
+# Create a new CSV file from a dataframe df :
+df_Final.to_csv("XXX.csv", index = False) 
