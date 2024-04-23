@@ -1,0 +1,45 @@
+import numpy as np
+import pandas as pd
+df = pd.read_csv("oasis_cross-sectional.csv")
+
+# Taking care of missing data NAN
+from sklearn.impute import SimpleImputer
+imputer = SimpleImputer(missing_values=np.nan, strategy= 'constant',fill_value= 0)
+imputer.fit(df.iloc[:, 7:8])
+df.iloc[:, 7:8] = imputer.transform(df.iloc[:, 7:8])
+
+# Split data between patient and control
+df_patient= df.loc[df['CDR'] != 0]
+df_control= df.loc[df['CDR'] == 0]
+
+# Taking care of missing data for the patients
+imputer = SimpleImputer(missing_values=np.nan, strategy= 'mean')
+imputer.fit(df_patient.iloc[:, 4:11])
+df_patient.iloc[:, 4:11] = imputer.transform(df_patient.iloc[:, 4:11])
+
+# Taking care of missing data for the control
+imputer = SimpleImputer(missing_values=np.nan, strategy= 'mean')
+imputer.fit(df_control.iloc[:, 4:11])
+df_control.iloc[:, 4:11] = imputer.transform(df_control.iloc[:, 4:11])
+
+# Merging back data 
+df=pd.concat([df_patient,df_control],axis=0,ignore_index=True)
+del(imputer, df_control, df_patient)
+df.drop(["Hand","Delay","ID"], axis=1,inplace=True, errors='raise')
+
+# Encoding Male and Female en AD state
+List_patient =[]
+for i in range(len(df)):
+    if float(df["CDR"][i]) == 0 :
+        List_patient.append(0)
+    if float(df["CDR"][i]) != 0 :
+        List_patient.append(1)             
+    if df["M/F"][i] == "M" :  
+        df.loc[i, "M/F"] = 1
+    if df["M/F"][i] == "F" :  
+        df.loc[i, "M/F"] = 0
+# Drop unused column    
+df.drop(["CDR"], axis=1,inplace=True, errors='raise')   
+df["Patient"] = List_patient
+del(i,List_patient)
+
